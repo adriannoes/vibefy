@@ -1,0 +1,139 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+dist
+dist-ssr
+build
+.next
+out
+.nuxt
+.cache
+.parcel-cache
+.vite
+
+# Environment variables and secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+.nyc_output
+
+# Temporary folders
+tmp/
+temp/
+.tmp/
+.temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.stackdump
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Cursor IDE
+.cursor/
+.cursorignore
+
+# Context files (contain sensitive information)
+context/
+@context/
+
+# Local development files
+.local
+*.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Lock files (keep package-lock.json)
+# yarn.lock is kept for consistency
+
+# Database and setup files
+*.sql
+database/
+supabase/
+!supabase/config.toml
+
+# Setup and migration scripts
+scripts/setup-*.js
+scripts/setup-*.sql
+scripts/create-tables*.js
+scripts/execute-*.js
+scripts/verify-*.js
+
+# Temporary environment files
+.env.temp
+.env.backup
+.env.*
+
+# Security and sensitive files
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+secrets/
+private/
+config.local.*
+local-config.*
+
+# Application specific
+.env.production
+.env.staging
+.env.development
+config/production.*
+config/staging.*
+config/development.*
+
+# Misc
+.history
+.vscode-test
