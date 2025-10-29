@@ -143,6 +143,15 @@ screenshots/
 *.jpeg
 *.gif
 
+# Local documentation and guides (personal use only)
+PUSH-GUIDE.md
+DEVELOPMENT-GUIDE.md
+LOCAL-SETUP.md
+PERSONAL-NOTES.md
+TODO-LOCAL.md
+CONTEXT-*.md
+NOTES-*.md
+
 # Misc
 .history
 .vscode-test
