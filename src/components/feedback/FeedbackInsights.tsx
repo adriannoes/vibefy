@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import {
   TrendingUp,
   TrendingDown,
@@ -10,9 +11,14 @@ import {
   Users,
   MessageSquare,
   Target,
-  Lightbulb
+  Lightbulb,
+  Sparkles,
+  Brain,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { CustomerFeedback } from '@/types/feedback';
+import { useFeedbackInsights } from '@/hooks/useFeedback';
 
 interface FeedbackInsightsProps {
   feedback: CustomerFeedback[];
@@ -28,120 +34,84 @@ interface InsightData {
 }
 
 export const FeedbackInsights: React.FC<FeedbackInsightsProps> = ({ feedback }) => {
-  const insights = useMemo((): InsightData[] => {
+  const { insights, recommendations, summary } = useFeedbackInsights(feedback);
+
+  // Convert AI insights to component format
+  const insightData = useMemo((): InsightData[] => {
     if (feedback.length === 0) return [];
-
-    const totalFeedback = feedback.length;
-    const newFeedback = feedback.filter(f => f.status === 'new').length;
-    const resolvedFeedback = feedback.filter(f => f.status === 'resolved').length;
-    const positiveFeedback = feedback.filter(f =>
-      f.sentiment === 'positive' || f.sentiment === 'very_positive'
-    ).length;
-    const negativeFeedback = feedback.filter(f =>
-      f.sentiment === 'negative' || f.sentiment === 'very_negative'
-    ).length;
-
-    const positivePercentage = (positiveFeedback / totalFeedback) * 100;
-    const negativePercentage = (negativeFeedback / totalFeedback) * 100;
-    const resolutionRate = totalFeedback > 0 ? (resolvedFeedback / totalFeedback) * 100 : 0;
 
     const result: InsightData[] = [];
 
-    // Sentiment insights
-    if (positivePercentage > 70) {
-      result.push({
-        title: 'High Customer Satisfaction',
-        description: `${positivePercentage.toFixed(1)}% of feedback is positive. Keep up the great work!`,
-        type: 'positive',
-        metric: `${positivePercentage.toFixed(1)}% positive`,
-        trend: 'up',
-      });
-    } else if (negativePercentage > 30) {
-      result.push({
-        title: 'Attention Needed',
-        description: `${negativePercentage.toFixed(1)}% of feedback is negative. Consider prioritizing these issues.`,
-        type: 'warning',
-        metric: `${negativePercentage.toFixed(1)}% negative`,
-        trend: 'down',
-        actionable: true,
-      });
+    // Add AI-powered insights
+    insights.slice(0, 4).forEach(insight => {
+      const negativeCount = insight.sentiment_breakdown.negative + insight.sentiment_breakdown.very_negative;
+      const positiveCount = insight.sentiment_breakdown.positive + insight.sentiment_breakdown.very_positive;
+      const negativeRatio = negativeCount / insight.count;
+
+      if (negativeRatio > 0.5) {
+        result.push({
+          title: `${insight.theme} Theme Needs Attention`,
+          description: `${Math.round(negativeRatio * 100)}% negative sentiment in "${insight.theme}". AI detected this as a priority area.`,
+          type: 'warning',
+          metric: `${insight.count} items`,
+          trend: insight.trend === 'increasing' ? 'down' : 'stable',
+          actionable: true,
+        });
+      } else if (positiveCount > negativeCount) {
+        result.push({
+          title: `Strong Performance in ${insight.theme}`,
+          description: `"${insight.theme}" shows positive sentiment trends. AI suggests maintaining current approach.`,
+          type: 'positive',
+          metric: `${insight.count} items`,
+          trend: insight.trend === 'increasing' ? 'up' : 'stable',
+        });
+      }
+    });
+
+    // Add traditional insights as fallback
+    if (result.length < 3) {
+      const totalFeedback = feedback.length;
+      const newFeedback = feedback.filter(f => f.status === 'new').length;
+      const resolvedFeedback = feedback.filter(f => f.status === 'resolved').length;
+      const positiveFeedback = feedback.filter(f =>
+        f.sentiment === 'positive' || f.sentiment === 'very_positive'
+      ).length;
+
+      const positivePercentage = (positiveFeedback / totalFeedback) * 100;
+      const resolutionRate = totalFeedback > 0 ? (resolvedFeedback / totalFeedback) * 100 : 0;
+
+      if (positivePercentage > 70) {
+        result.push({
+          title: 'High Customer Satisfaction',
+          description: `${positivePercentage.toFixed(1)}% of feedback is positive. Keep up the great work!`,
+          type: 'positive',
+          metric: `${positivePercentage.toFixed(1)}% positive`,
+          trend: 'up',
+        });
+      }
+
+      if (resolutionRate > 80) {
+        result.push({
+          title: 'Excellent Resolution Rate',
+          description: `You've resolved ${resolutionRate.toFixed(1)}% of feedback. Your team is doing great!`,
+          type: 'positive',
+          metric: `${resolutionRate.toFixed(1)}% resolved`,
+        });
+      }
+
+      if (newFeedback > 5) {
+        result.push({
+          title: 'Active Feedback Stream',
+          description: `${newFeedback} new feedback items require attention.`,
+          type: 'info',
+          metric: `${newFeedback} new items`,
+          actionable: true,
+        });
+      }
     }
 
-    // Resolution rate insights
-    if (resolutionRate > 80) {
-      result.push({
-        title: 'Excellent Resolution Rate',
-        description: `You've resolved ${resolutionRate.toFixed(1)}% of feedback. Your team is doing great!`,
-        type: 'positive',
-        metric: `${resolutionRate.toFixed(1)}% resolved`,
-      });
-    } else if (resolutionRate < 50) {
-      result.push({
-        title: 'Improve Resolution Rate',
-        description: `Only ${resolutionRate.toFixed(1)}% of feedback has been resolved. Consider increasing team capacity.`,
-        type: 'warning',
-        metric: `${resolutionRate.toFixed(1)}% resolved`,
-        actionable: true,
-      });
-    }
-
-    // New feedback insights
-    if (newFeedback > 10) {
-      result.push({
-        title: 'High Volume of New Feedback',
-        description: `${newFeedback} new feedback items need attention. Consider triaging them soon.`,
-        type: 'info',
-        metric: `${newFeedback} new items`,
-        actionable: true,
-      });
-    }
-
-    // Feature request insights
-    const featureRequests = feedback.filter(f => f.feature_request).length;
-    if (featureRequests > 0) {
-      const featurePercentage = (featureRequests / totalFeedback) * 100;
-      result.push({
-        title: 'Feature Request Opportunities',
-        description: `${featureRequests} feedback items (${featurePercentage.toFixed(1)}%) are feature requests. These could drive your roadmap.`,
-        type: 'info',
-        metric: `${featureRequests} requests`,
-        actionable: true,
-      });
-    }
-
-    // Bug report insights
-    const bugReports = feedback.filter(f => f.bug_report).length;
-    if (bugReports > 0) {
-      const bugPercentage = (bugReports / totalFeedback) * 100;
-      result.push({
-        title: 'Bug Reports to Address',
-        description: `${bugReports} feedback items (${bugPercentage.toFixed(1)}%) are bug reports. Prioritize these for product stability.`,
-        type: 'warning',
-        metric: `${bugReports} bugs`,
-        actionable: true,
-      });
-    }
-
-    // Source insights
-    const sources = feedback.reduce((acc, f) => {
-      acc[f.source] = (acc[f.source] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const topSource = Object.entries(sources).sort(([,a], [,b]) => b - a)[0];
-    if (topSource) {
-      const [source, count] = topSource;
-      const sourcePercentage = (count / totalFeedback) * 100;
-      result.push({
-        title: 'Primary Feedback Source',
-        description: `Most feedback (${sourcePercentage.toFixed(1)}%) comes from ${source}. Consider optimizing this channel.`,
-        type: 'info',
-        metric: `${source} (${count})`,
-      });
-    }
-
-    return result.slice(0, 6); // Limit to 6 insights
-  }, [feedback]);
+    return result.slice(0, 6);
+  }, [feedback, insights]);
 
   const getInsightIcon = (type: string) => {
     switch (type) {
@@ -167,14 +137,14 @@ export const FeedbackInsights: React.FC<FeedbackInsightsProps> = ({ feedback }) 
     }
   };
 
-  if (insights.length === 0) {
+  if (feedback.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <Lightbulb className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Insights Yet</h3>
+          <Brain className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">AI-Powered Insights Ready</h3>
           <p className="text-muted-foreground">
-            Insights will appear here as you collect more customer feedback.
+            Add customer feedback and our AI will automatically detect themes, sentiment, and provide actionable recommendations.
           </p>
         </CardContent>
       </Card>
@@ -183,6 +153,89 @@ export const FeedbackInsights: React.FC<FeedbackInsightsProps> = ({ feedback }) 
 
   return (
     <div className="space-y-6">
+      {/* AI Summary Header */}
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
+              <Sparkles className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">AI-Powered Analysis</h3>
+              <p className="text-sm text-muted-foreground">
+                Analyzed {summary.totalFeedback} feedback items • {summary.themesDiscovered} themes detected
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{summary.positiveSentiment}</div>
+              <div className="text-sm text-muted-foreground">Positive</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{summary.negativeSentiment}</div>
+              <div className="text-sm text-muted-foreground">Negative</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{summary.themesDiscovered}</div>
+              <div className="text-sm text-muted-foreground">Themes</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">{summary.urgentIssues}</div>
+              <div className="text-sm text-muted-foreground">Urgent</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Recommendations Section */}
+      {recommendations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-orange-500" />
+              AI Recommendations
+              <Badge variant="secondary">{recommendations.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recommendations.slice(0, 3).map((rec, index) => (
+                <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
+                  <div className={`p-1 rounded ${
+                    rec.type === 'urgent' ? 'bg-red-100 text-red-600' :
+                    rec.type === 'priority' ? 'bg-orange-100 text-orange-600' :
+                    rec.type === 'feature' ? 'bg-blue-100 text-blue-600' :
+                    'bg-green-100 text-green-600'
+                  }`}>
+                    {rec.type === 'urgent' ? <AlertTriangle className="h-4 w-4" /> :
+                     rec.type === 'priority' ? <Target className="h-4 w-4" /> :
+                     rec.type === 'feature' ? <Lightbulb className="h-4 w-4" /> :
+                     <TrendingUp className="h-4 w-4" />}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium">{rec.title}</h4>
+                      <Badge variant="outline" className="text-xs">
+                        {rec.impact} impact
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {rec.effort} effort
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{rec.description}</p>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -214,12 +267,10 @@ export const FeedbackInsights: React.FC<FeedbackInsightsProps> = ({ feedback }) 
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-purple-500" />
+              <Brain className="h-5 w-5 text-purple-500" />
               <div>
-                <p className="text-2xl font-bold">
-                  {feedback.filter(f => f.feature_request).length}
-                </p>
-                <p className="text-sm text-muted-foreground">Features</p>
+                <p className="text-2xl font-bold">{summary.themesDiscovered}</p>
+                <p className="text-sm text-muted-foreground">AI Themes</p>
               </div>
             </div>
           </CardContent>
