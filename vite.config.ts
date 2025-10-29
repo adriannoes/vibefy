@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => ({
     host: "localhost",
     port: 5173,
     cors: true,
+    hmr: {
+      port: 5173,
+    },
   },
   plugins: [
     react({
