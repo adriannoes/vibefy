@@ -2,12 +2,23 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// ⚠️ SECURITY WARNING: Para produção, sempre use variáveis de ambiente (.env)
+// As credenciais abaixo são apenas fallback para desenvolvimento
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL_HERE';
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY_HERE';
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+// Validar se as variáveis estão configuradas
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  console.warn('⚠️ AVISO: Usando credenciais hardcoded. Configure o arquivo .env.local para desenvolvimento!');
+  console.warn('📝 Dica: Copie .env.example para .env.local e configure suas credenciais');
 }
+
+console.log('🔧 Supabase Client: Config loaded:', {
+  url: SUPABASE_URL,
+  key: SUPABASE_PUBLISHABLE_KEY ? '✅ Present' : '❌ Missing',
+  usingEnvVars: !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY),
+  source: import.meta.env.VITE_SUPABASE_URL ? 'environment' : 'fallback'
+});
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

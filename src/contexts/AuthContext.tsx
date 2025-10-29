@@ -32,18 +32,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Debug: verificar se Supabase está configurado
+  console.log('🔧 AuthContext: Supabase config check:', {
+    url: import.meta.env.VITE_SUPABASE_URL ? '✅ Set' : '❌ Missing',
+    key: import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing'
+  });
+
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('🔍 AuthContext: Getting initial session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        console.log('🔍 AuthContext: Initial session result:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email,
+          error
+        });
+
         if (session?.user) {
+          console.log('✅ AuthContext: Found existing session, setting authUser');
           setAuthUser(session.user as AuthUser);
           await fetchUserProfile(session.user.id);
+        } else {
+          console.log('ℹ️ AuthContext: No existing session found');
         }
       } catch (error) {
         console.error('❌ AuthContext: Error in getInitialSession:', error);
       } finally {
+        console.log('🔄 AuthContext: getInitialSession completed, setting loading to false');
         setLoading(false);
       }
     };
@@ -59,10 +79,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔄 AuthContext: Auth state change:', {
+          event,
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email
+        });
+
         if (session?.user) {
+          console.log('✅ AuthContext: Setting authUser:', session.user.id);
           setAuthUser(session.user as AuthUser);
           await fetchUserProfile(session.user.id);
         } else {
+          console.log('❌ AuthContext: Clearing auth state');
           setAuthUser(null);
           setUser(null);
         }
@@ -77,22 +107,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const createUserProfile = async (userId: string) => {
-    try {
-      console.log('🔄 AuthContext: Creating user profile for', userId);
+    console.log('🔄 AuthContext: Creating user profile for', userId);
 
-      if (!authUser) {
-        console.warn('⚠️ AuthContext: No authUser available, cannot create profile');
-        return;
+    try {
+      // Primeiro, tentar buscar informações do usuário autenticado
+      let userEmail = '';
+      let userName = 'User';
+
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (!userError && user) {
+          userEmail = user.email || '';
+          userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+          console.log('✅ AuthContext: Got user info from auth:', { email: userEmail, name: userName });
+        }
+      } catch (authError) {
+        console.warn('⚠️ AuthContext: Could not get user from auth, using defaults');
       }
 
       const newProfile = {
         id: userId,
-        email: authUser.email || '',
-        full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-        avatar_url: authUser.user_metadata?.avatar_url || null,
+        email: userEmail,
+        full_name: userName,
+        avatar_url: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+
+      console.log('📤 AuthContext: Inserting profile:', newProfile);
 
       const { data, error } = await supabase
         .from('user_profiles')
@@ -101,80 +143,79 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .single();
 
       if (error) {
-        console.error('❌ AuthContext: Error creating user profile:', error);
+        console.error('❌ AuthContext: Insert error:', error);
 
-        // Verificar se é erro de duplicata (usuário já existe)
-        if (error.code === '23505') { // unique_violation
-          console.log('ℹ️ AuthContext: Profile already exists, trying to fetch it...');
-          // Tentar buscar o perfil existente
-          const { data: existingData, error: fetchError } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
+        // Se erro de duplicata, tentar buscar o perfil existente
+        if (error.code === '23505') {
+          console.log('ℹ️ AuthContext: Profile exists, fetching...');
+          try {
+            const { data: existingData, error: fetchError } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', userId)
+              .single();
 
-          if (!fetchError && existingData) {
-            console.log('✅ AuthContext: Found existing profile:', existingData);
-            setUser(existingData);
-            return;
+            if (!fetchError && existingData) {
+              console.log('✅ AuthContext: Found existing profile');
+              setUser(existingData);
+              return;
+            }
+          } catch (fetchErr) {
+            console.error('❌ AuthContext: Failed to fetch existing profile:', fetchErr);
           }
         }
 
-        // Para outros erros, usar perfil local
-        console.warn('⚠️ AuthContext: Using local profile due to database error');
+        // Fallback para perfil local
+        console.warn('⚠️ AuthContext: Using local profile');
         setUser(newProfile);
-        return;
+      } else {
+        console.log('✅ AuthContext: Profile created successfully');
+        setUser(data);
       }
-
-      console.log('✅ AuthContext: User profile created successfully:', data);
-      setUser(data);
     } catch (error) {
-      console.error('❌ AuthContext: Exception creating user profile:', error);
-      // Em caso de erro, cria um perfil local
-      if (authUser) {
-        setUser({
-          id: userId,
-          email: authUser.email || '',
-          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-          avatar_url: authUser.user_metadata?.avatar_url || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      }
+      console.error('❌ AuthContext: Exception in createUserProfile:', error);
+      // Sempre usar perfil local em caso de erro
+      setUser({
+        id: userId,
+        email: '',
+        full_name: 'User',
+        avatar_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     }
   };
 
   const fetchUserProfile = async (userId: string) => {
     console.log('🔍 AuthContext: Processing user profile for', userId);
 
+    // Não esperar pelo authUser - usar dados básicos
+    const fallbackProfile = {
+      id: userId,
+      email: '', // Será preenchido quando disponível
+      full_name: 'User', // Nome padrão
+      avatar_url: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Sempre definir um perfil básico imediatamente
+    setUser(fallbackProfile);
+    console.log('✅ AuthContext: Basic profile set immediately');
+
     try {
-      console.log('⚡ AuthContext: Checking if user profile exists...');
+      console.log('🔄 AuthContext: Attempting to fetch/create full profile...');
 
-      // Buscar o perfil completo diretamente
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // Timeout de 3 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 3000);
+      });
 
-      if (error) {
-        // Se o erro for "not found" (PGRST116), criar o perfil
-        if (error.code === 'PGRST116') {
-          console.log('🔄 AuthContext: User profile not found, creating new one...');
-          await createUserProfile(userId);
-        } else {
-          console.error('❌ AuthContext: Error fetching user profile:', error);
-          // Em caso de erro de permissão ou outro erro, tentar criar perfil mesmo assim
-          await createUserProfile(userId);
-        }
-      } else {
-        console.log('✅ AuthContext: User profile found:', data);
-        setUser(data);
-      }
+      const createPromise = createUserProfile(userId);
+      await Promise.race([createPromise, timeoutPromise]);
+      console.log('✅ AuthContext: Profile processing completed');
     } catch (error) {
-      console.error('❌ AuthContext: Exception in fetchUserProfile:', error);
-      // Em caso de exceção, tentar criar perfil
-      await createUserProfile(userId);
+      console.log('ℹ️ AuthContext: Using basic profile (full profile fetch failed)');
     }
   };
 
