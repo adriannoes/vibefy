@@ -54,7 +54,12 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <ProjectProvider>
-          <BrowserRouter>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
             <KeyboardShortcutsProvider>
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
