@@ -113,6 +113,7 @@ const AuthForm: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10"
+                    autoComplete="current-password"
                     required
                   />
                 </div>
@@ -182,6 +183,7 @@ const AuthForm: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10"
+                    autoComplete="new-password"
                     required
                     minLength={6}
                   />

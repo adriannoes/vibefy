@@ -2,12 +2,23 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// ⚠️ SECURITY WARNING: Para produção, sempre use variáveis de ambiente (.env)
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Validar se as variáveis estão configuradas
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.error('❌ ERRO: Variáveis de ambiente do Supabase não configuradas!');
+  console.error('📝 Dica: Copie .env.example para .env.local e configure suas credenciais');
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
+
+console.log('🔧 Supabase Client: Config loaded:', {
+  url: SUPABASE_URL,
+  key: SUPABASE_PUBLISHABLE_KEY ? '✅ Present' : '❌ Missing',
+  usingEnvVars: !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY),
+  source: 'environment'
+});
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

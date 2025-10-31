@@ -93,38 +93,49 @@ A comprehensive product management platform designed for modern product teams. B
    cd vibefy
    ```
 
-2. **Install dependencies**
+2. **Quick Setup (Recommended)**
+   ```bash
+   # Automated setup with pre-configured development credentials
+   npm run setup:dev
+   ```
+   
+   This command will:
+   - Install dependencies
+   - Create `.env.local` with development credentials
+   - Set up the database with sample data
+   - Configure everything for local development
+
+3. **Manual Setup (Alternative)**
+
+   **Install dependencies:**
    ```bash
    npm install
    ```
 
-3. **Set up environment variables**
-
-   Create a `.env` file in the project root with your Supabase credentials:
-   ```env
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   **Set up environment variables:**
+   ```bash
+   # For development (pre-configured credentials)
+   cp .env.example .env.local
+   
+   # For production (use your own credentials)
+   cp .env.example .env
+   # Edit .env with your Supabase credentials
    ```
 
-4. **Set up the database**
+   **Set up the database:**
    ```bash
-   # Quick setup with sample data
-   npm run setup:db && npm run populate:data
-   
-   # Or manual setup
    npm run setup:db        # Creates all tables
    npm run populate:data   # Adds sample data
    ```
 
-5. **Create admin user for testing**
+4. **Create admin user (Optional)**
    ```bash
    npm run create:admin
    ```
    
    This creates a test admin user with default credentials for local development.
 
-6. **Start the development server**
+5. **Start the development server**
    ```bash
    npm run dev
    ```
@@ -138,10 +149,12 @@ A comprehensive product management platform designed for modern product teams. B
 npm run dev              # Start development server
 npm run build           # Build for production
 npm run preview         # Preview production build
+npm run setup:dev       # Quick development setup (recommended)
 
 # Testing
 npm run test            # Run all tests
 npm run test:ui         # Visual test interface
+npm run test:run        # Run tests once
 npm run test:coverage   # Run tests with coverage
 
 # Database

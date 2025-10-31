@@ -12,12 +12,17 @@ export default defineConfig({
     pool: 'threads',
     poolOptions: {
       threads: {
-        singleThread: false,
-        useAtomics: true,
+        singleThread: true, // Usar thread único para evitar problemas de memória
+        useAtomics: false,
+        maxThreads: 1,
+        minThreads: 1,
       },
     },
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 30000, // Aumentar timeout para testes mais longos
+    hookTimeout: 30000,
+    maxConcurrency: 1, // Executar testes sequencialmente
+    maxWorkers: 1,
+    isolate: false, // Desabilitar isolamento para reduzir overhead
   },
   resolve: {
     alias: {

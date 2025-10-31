@@ -21,7 +21,7 @@ vi.mock('./useAuth', () => ({
   useAuth: () => mockAuthContext
 }));
 
-// Mock do Supabase client com implementação mais realista
+// Mock do Supabase client - sempre falha para forçar uso de dados mockados nos testes
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {

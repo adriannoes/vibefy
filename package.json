@@ -12,6 +12,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "setup:dev": "./setup-dev.sh",
     "setup:db": "node scripts/setup-database.js",
     "populate:data": "node scripts/populate-sample-data.js",
     "create:admin": "node scripts/create-admin-user.js",
