@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Tag, TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
+import { Tag, TrendingUp, TrendingDown, Minus, BarChart3, Sparkles, Brain } from 'lucide-react';
 import { CustomerFeedback } from '@/types/feedback';
+import { useFeedbackThemes } from '@/hooks/useFeedback';
 
 interface FeedbackThemesProps {
   feedback: CustomerFeedback[];
@@ -26,9 +27,33 @@ interface ThemeData {
 }
 
 export const FeedbackThemes: React.FC<FeedbackThemesProps> = ({ feedback }) => {
-  // Extract themes from feedback tags and content
+  // Use AI-powered theme detection
+  const aiThemes = useFeedbackThemes(feedback);
+
+  // Convert AI themes to component format
   const themes = useMemo((): ThemeData[] => {
-    // Group feedback by tags to create themes
+    return aiThemes.map(theme => ({
+      name: theme.name,
+      count: theme.feedback_count,
+      percentage: feedback.length > 0 ? (theme.feedback_count / feedback.length) * 100 : 0,
+      sentimentBreakdown: {
+        very_positive: theme.sentiment_distribution?.very_positive || 0,
+        positive: theme.sentiment_distribution?.positive || 0,
+        neutral: theme.sentiment_distribution?.neutral || 0,
+        negative: theme.sentiment_distribution?.negative || 0,
+        very_negative: theme.sentiment_distribution?.very_negative || 0,
+      },
+      trend: theme.trend,
+      topTags: [theme.name],
+      isAiDetected: true,
+    }));
+  }, [aiThemes, feedback.length]);
+
+  // Fallback to tag-based themes if no AI themes detected
+  const fallbackThemes = useMemo((): ThemeData[] => {
+    if (themes.length > 0) return themes;
+
+    // Group feedback by tags to create themes (fallback)
     const tagGroups: Record<string, CustomerFeedback[]> = {};
 
     feedback.forEach((item) => {
@@ -50,24 +75,19 @@ export const FeedbackThemes: React.FC<FeedbackThemesProps> = ({ feedback }) => {
         very_negative: items.filter(i => i.sentiment === 'very_negative').length,
       };
 
-      // Mock trend calculation - in real app, this would compare with historical data
-      const trend: 'increasing' | 'stable' | 'decreasing' =
-        Math.random() > 0.6 ? 'increasing' :
-        Math.random() > 0.3 ? 'stable' : 'decreasing';
-
       return {
         name: tag,
         count: items.length,
         percentage: (items.length / feedback.length) * 100,
         sentimentBreakdown,
-        trend,
-        topTags: [tag], // For now, just the main tag
+        trend: 'stable' as const,
+        topTags: [tag],
+        isAiDetected: false,
       };
     });
 
-    // Sort by count descending
     return themeData.sort((a, b) => b.count - a.count);
-  }, [feedback]);
+  }, [feedback, themes.length]);
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
@@ -96,14 +116,17 @@ export const FeedbackThemes: React.FC<FeedbackThemesProps> = ({ feedback }) => {
     }
   };
 
-  if (themes.length === 0) {
+  // Use fallback themes if no AI themes
+  const displayThemes = themes.length > 0 ? themes : fallbackThemes;
+
+  if (displayThemes.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <Tag className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Themes Yet</h3>
+          <Brain className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">AI Theme Detection Ready</h3>
           <p className="text-muted-foreground">
-            Themes will appear here as you add tags to feedback items.
+            Our AI will automatically detect themes from your feedback content and tags.
           </p>
         </CardContent>
       </Card>
@@ -117,10 +140,16 @@ export const FeedbackThemes: React.FC<FeedbackThemesProps> = ({ feedback }) => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Tag className="h-5 w-5 text-blue-500" />
+              {themes.length > 0 ? (
+                <Sparkles className="h-5 w-5 text-purple-500" />
+              ) : (
+                <Tag className="h-5 w-5 text-blue-500" />
+              )}
               <div>
-                <p className="text-2xl font-bold">{themes.length}</p>
-                <p className="text-sm text-muted-foreground">Themes</p>
+                <p className="text-2xl font-bold">{displayThemes.length}</p>
+                <p className="text-sm text-muted-foreground">
+                  {themes.length > 0 ? 'AI Themes' : 'Themes'}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -132,7 +161,7 @@ export const FeedbackThemes: React.FC<FeedbackThemesProps> = ({ feedback }) => {
               <BarChart3 className="h-5 w-5 text-green-500" />
               <div>
                 <p className="text-2xl font-bold">
-                  {themes.filter(t => t.trend === 'increasing').length}
+                  {displayThemes.filter(t => t.trend === 'increasing').length}
                 </p>
                 <p className="text-sm text-muted-foreground">Growing</p>
               </div>
@@ -146,7 +175,7 @@ export const FeedbackThemes: React.FC<FeedbackThemesProps> = ({ feedback }) => {
               <TrendingDown className="h-5 w-5 text-red-500" />
               <div>
                 <p className="text-2xl font-bold">
-                  {themes.filter(t => t.trend === 'decreasing').length}
+                  {displayThemes.filter(t => t.trend === 'decreasing').length}
                 </p>
                 <p className="text-sm text-muted-foreground">Declining</p>
               </div>
@@ -157,14 +186,24 @@ export const FeedbackThemes: React.FC<FeedbackThemesProps> = ({ feedback }) => {
 
       {/* Themes List */}
       <div className="space-y-4">
-        {themes.map((theme) => (
+        {displayThemes.map((theme) => (
           <Card key={theme.name}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Tag className="h-5 w-5" />
+                  {theme.isAiDetected ? (
+                    <Sparkles className="h-5 w-5 text-purple-500" />
+                  ) : (
+                    <Tag className="h-5 w-5" />
+                  )}
                   {theme.name}
                   <Badge variant="secondary">{theme.count} items</Badge>
+                  {theme.isAiDetected && (
+                    <Badge variant="outline" className="text-xs">
+                      <Brain className="h-3 w-3 mr-1" />
+                      AI Detected
+                    </Badge>
+                  )}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   {getTrendIcon(theme.trend)}

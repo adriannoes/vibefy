@@ -134,6 +134,15 @@ config/production.*
 config/staging.*
 config/development.*
 
+# Test reports and screenshots (may contain sensitive data)
+TESTE-*.md
+test-reports/
+screenshots/
+*.png
+*.jpg
+*.jpeg
+*.gif
+
 # Misc
 .history
 .vscode-test
