@@ -103,12 +103,12 @@ database/
 supabase/
 !supabase/config.toml
 
-# Setup and migration scripts
-scripts/setup-*.js
-scripts/setup-*.sql
-scripts/create-tables*.js
-scripts/execute-*.js
-scripts/verify-*.js
+# Setup and migration scripts (now safe to version - no hardcoded credentials)
+# scripts/setup-*.js
+# scripts/setup-*.sql
+# scripts/create-tables*.js
+# scripts/execute-*.js
+# scripts/verify-*.js
 
 # Temporary environment files
 .env.temp
